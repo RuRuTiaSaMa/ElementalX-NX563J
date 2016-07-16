@@ -132,5 +132,37 @@ config NUBIA_LCD_KEEP_POWER_ON
 	bool "lcd keep power on at suspend"
 	default n
 	---help---
+
 	JDI LCD and TP seq modifications.
+
+
+
+
+	Say y to enable
+
+config IRIS2P_FULL_SUPPORT
+	bool "Enable IRIS2P Support"
+	default n
+	---help---
+	Say y to enable
+
+config IRIS2P_LIGHTUP_ONLY
+	bool "Lightup panel only (IRIS2P)"
+	default n
+	---help---
+	Say y to enable
+
+config IRIS2P_DRC_SUPPORT
+	bool "Enable IRIS2P DRC support"
+	default n
+	---help---
+	Say y to enable
+
+config FB_MSM_MDSS_KCAL_CTRL
+	depends on FB_MSM_MDSS
+	bool "MDSS color control"
+	---help---
+	  Enable sysfs for post-processing control of mdss-mdp5 display
+	  controllers in MDSS.
+
 endif
