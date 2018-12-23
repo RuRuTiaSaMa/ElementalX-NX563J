@@ -22,9 +22,6 @@
 #include <linux/fs_struct.h>
 #include <linux/ratelimit.h>
 #include <linux/sched.h>
-
-<<<<<<< HEAD
-=======
 //Nubia FileObserver Begin
 #ifdef ENABLE_FILE_OBSERVER
 #include "observer.h"
@@ -32,7 +29,6 @@
 //Nubia FileObserver End
 
 /* Do not directly use this function. Use OVERRIDE_CRED() instead. */
->>>>>>> bbd54ecafba0... fs: sdcards: fs import nubia changes
 const struct cred *override_fsids(struct sdcardfs_sb_info *sbi,
 		struct sdcardfs_inode_data *data)
 {
