@@ -1007,21 +1007,15 @@ int diag_process_apps_pkt(unsigned char *buf, int len, int pid)
 		} else {
 			mutex_unlock(&driver->md_session_lock);
 			if (MD_PERIPHERAL_MASK(reg_item->proc) &
-<<<<<<< HEAD
-				driver->logging_mask)
-				diag_send_error_rsp(buf, len, pid);
-			else
-=======
 				driver->logging_mask){
 				mutex_unlock(&driver->cmd_reg_mutex);
-				diag_send_error_rsp(buf, len, info);
+				diag_send_error_rsp(buf, len, pid);
                             if(ntype != 0){
                                 pr_err("diag: In %s, received FTM debug cmd %s no info error reg_item->proc %d driver->logging_mask %d\n", __func__, (ntype == 1) ? " wireless " : " wifi ", reg_item->proc, driver->logging_mask);
                             }
         return write_len;
 			    }
 			else{
->>>>>>> b6e86ec27f90... drivers: char: diag: import nubia changes
 				write_len = diag_send_data(reg_item, buf, len);
                             if(ntype != 0){
                                 pr_err("diag: In %s, received FTM debug cmd %s no info success reg_item->proc %d driver->logging_mask %d\n", __func__, (ntype == 1) ? " wireless " : " wifi ", reg_item->proc, driver->logging_mask);
