@@ -784,15 +784,22 @@ struct diag_cmd_reg_entry_t *diag_cmd_search(
 	struct list_head *temp;
 	struct diag_cmd_reg_t *item = NULL;
 	struct diag_cmd_reg_entry_t *temp_entry = NULL;
-
+       int ntype = 0;
 	if (!entry) {
 		pr_err("diag: In %s, invalid entry\n", __func__);
 		return NULL;
 	}
 
+       ntype = nubia_diag_get_ftm_type(entry);
+       if(ntype != 0){
+	    pr_err("diag: In %s, search entry FTM debug cmd %s \n", __func__, (ntype == 1) ? " wireless " : " wifi ");
+       }
 	list_for_each_safe(start, temp, &driver->cmd_reg_list) {
 		item = list_entry(start, struct diag_cmd_reg_t, link);
 		if (&item->entry == NULL) {
+                       if(ntype != 0){
+			       pr_err("diag: In %s, search entry FTM debug cmd %s unable to search command\n", __func__, (ntype == 1) ? " wireless " : " wifi ");
+                       }
 			pr_err("diag: In %s, unable to search command\n",
 			       __func__);
 			return NULL;
@@ -831,7 +838,9 @@ struct diag_cmd_reg_entry_t *diag_cmd_search(
 			}
 		}
 	}
-
+       if(ntype != 0){
+	    pr_err("diag: In %s, search entry FTM debug cmd %s null\n", __func__, (ntype == 1) ? " wireless " : " wifi ");
+       }
 	return NULL;
 }
 
@@ -839,22 +848,33 @@ void diag_cmd_remove_reg(struct diag_cmd_reg_entry_t *entry, uint8_t proc)
 {
 	struct diag_cmd_reg_t *item = NULL;
 	struct diag_cmd_reg_entry_t *temp_entry;
+       int ntype = 0;
+
 	if (!entry) {
 		pr_err("diag: In %s, invalid entry\n", __func__);
 		return;
 	}
-
+       ntype = nubia_diag_get_ftm_type(entry);
+       if(ntype != 0){
+	    pr_err("diag: In %s, remove entry for FTM debug cmd %s \n", __func__, (ntype == 1) ? " wireless " : " wifi ");
+       }
 	mutex_lock(&driver->cmd_reg_mutex);
 	temp_entry = diag_cmd_search(entry, proc);
 	if (temp_entry) {
 		item = container_of(temp_entry, struct diag_cmd_reg_t, entry);
 		if (!item) {
 			mutex_unlock(&driver->cmd_reg_mutex);
+                    if(ntype != 0){
+                        pr_err("diag: In %s, remove entry for FTM debug cmd %s no find\n", __func__, (ntype == 1) ? " wireless " : " wifi ");
+                    }
 			return;
 		}
 		list_del(&item->link);
 		kfree(item);
 		driver->cmd_reg_count--;
+            if(ntype != 0){
+                pr_err("diag: In %s, remove entry for FTM debug cmd %s success\n", __func__, (ntype == 1) ? " wireless " : " wifi ");
+            }
 	}
 	diag_cmd_invalidate_polling(DIAG_CMD_REMOVE);
 	mutex_unlock(&driver->cmd_reg_mutex);
@@ -1715,19 +1735,21 @@ static int diag_switch_logging(struct diag_logging_mode_param_t *param)
 			return -EINVAL;
 		}
 
+    i = upd - UPD_WLAN;
+
 		if (driver->md_session_map[peripheral] &&
 			(MD_PERIPHERAL_MASK(peripheral) &
-			diag_mux->mux_mask)) {
+			diag_mux->mux_mask)&&
+			!driver->pd_session_clear[i]) {
 			DIAG_LOG(DIAG_DEBUG_USERSPACE,
 			"diag_fr: User PD is already logging onto active peripheral logging\n");
-			i = upd - UPD_WLAN;
 			driver->pd_session_clear[i] = 0;
 			return -EINVAL;
 		}
 		peripheral_mask =
 			diag_translate_mask(param->pd_mask);
 		param->peripheral_mask = peripheral_mask;
-		i = upd - UPD_WLAN;
+
 		if (!driver->pd_session_clear[i]) {
 			driver->pd_logging_mode[i] = 1;
 			driver->num_pd_session += 1;
@@ -1786,7 +1808,7 @@ static int diag_switch_logging(struct diag_logging_mode_param_t *param)
 	driver->logging_mask = peripheral_mask;
 	DIAG_LOG(DIAG_DEBUG_USERSPACE,
 		"Switch logging to %d mask:%0x\n", new_mode, peripheral_mask);
-
+	pr_err("FTM debug Switch logging to %d mask:%0x\n", new_mode, peripheral_mask);
 	/* Update to take peripheral_mask */
 	if (new_mode != DIAG_MEMORY_DEVICE_MODE) {
 		diag_update_real_time_vote(DIAG_PROC_MEMORY_DEVICE,
@@ -2195,7 +2217,7 @@ static int diag_cmd_register_tbl(struct diag_cmd_reg_tbl_t *reg_tbl)
 
 	count = reg_tbl->count;
 	if ((UINT_MAX / entry_len) < count) {
-		pr_warn("diag: In %s, possbile integer overflow.\n", __func__);
+		pr_err("diag: In %s, possbile integer overflow.\n", __func__);
 		return -EFAULT;
 	}
 
@@ -2215,12 +2237,23 @@ static int diag_cmd_register_tbl(struct diag_cmd_reg_tbl_t *reg_tbl)
 	}
 
 	for (i = 0; i < count; i++) {
+              int ntype = nubia_diag_get_ftm_type_reg(&entries[i]);
+              if(ntype != 0){
+                   pr_err("diag: In %s, register tbl for FTM debug cmd %s \n", __func__, (ntype == 1) ? " wireless " : " wifi ");
+              }
 		err = diag_cmd_add_reg(&entries[i], APPS_DATA, current->tgid);
 		if (err) {
+                     if(ntype != 0){
+                         pr_err("diag: In %s, register tbl for FTM debug cmd %s failed \n", __func__, (ntype == 1) ? " wireless " : " wifi ");
+                     }
 			pr_err("diag: In %s, unable to register command, err: %d\n",
 			       __func__, err);
 			break;
-		}
+		}else{
+                    if(ntype != 0){
+                        pr_err("diag: In %s, register tbl for FTM debug cmd %s success \n", __func__, (ntype == 1) ? " wireless " : " wifi ");
+                    }
+              }
 	}
 
 	kfree(entries);
@@ -2233,6 +2266,7 @@ static int diag_ioctl_cmd_reg(unsigned long ioarg)
 
 	if (copy_from_user(&reg_tbl, (void __user *)ioarg,
 			   sizeof(struct diag_cmd_reg_tbl_t))) {
+	       pr_err("diag: In %s, copy_from_user failed\n", __func__);
 		return -EFAULT;
 	}
 
@@ -2264,6 +2298,7 @@ static int diag_ioctl_cmd_reg_compat(unsigned long ioarg)
 
 	if (copy_from_user(&reg_tbl_compat, (void __user *)ioarg,
 			   sizeof(struct diag_cmd_reg_tbl_compat_t))) {
+	       pr_err("diag: In %s, copy_from_user failed\n", __func__);
 		return -EFAULT;
 	}
 
