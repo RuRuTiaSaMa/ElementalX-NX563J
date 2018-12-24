@@ -977,7 +977,7 @@ int diag_process_apps_pkt(unsigned char *buf, int len, int pid)
 						   driver->apps_rsp_buf,
 						   DIAG_MAX_RSP_SIZE);
 		if (write_len > 0)
-			diag_send_rsp(driver->apps_rsp_buf, write_len, info);
+			diag_send_rsp(driver->apps_rsp_buf, write_len, pid);
                 if(ntype != 0){
                     pr_err("diag: In %s, received FTM debug cmd %s DIAG_CMD_LOG_ON_DMND\n", __func__, (ntype == 1) ? " wireless " : " wifi ");
                 }
@@ -1088,7 +1088,7 @@ int diag_process_apps_pkt(unsigned char *buf, int len, int pid)
 		/* send response back */
 		//driver->apps_rsp_buf[0] = *buf;
 		memcpy(driver->apps_rsp_buf,buf,3);
-		diag_send_rsp(driver->apps_rsp_buf, 1, info);
+		diag_send_rsp(driver->apps_rsp_buf, 1, pid);
 		msleep(5000);
 		printk(KERN_CRIT "diag: reboot set, Rebooting SoC..\n");
 		kernel_restart(NULL);
