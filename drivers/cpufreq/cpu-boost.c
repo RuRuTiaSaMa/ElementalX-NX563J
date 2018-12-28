@@ -232,11 +232,6 @@ static void do_input_boost(struct work_struct *work)
 		i_sync_info->input_boost_min = i_sync_info->input_boost_freq;
 	}
 
-#ifdef CONFIG_DYNAMIC_STUNE_BOOST
-	/* Set dynamic stune boost value */
-	sched_dynamic_stune_boost = dynamic_stune_boost;
-#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
-
 	/* Update policies for all online CPUs */
 	update_policy_online();
 
