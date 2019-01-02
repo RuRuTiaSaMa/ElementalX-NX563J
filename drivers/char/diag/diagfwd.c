@@ -511,7 +511,7 @@ void diag_update_md_clients(unsigned int type)
 				if (driver->client_map[j].pid != 0 &&
 					driver->client_map[j].pid ==
 					driver->md_session_map[i]->pid) {
-					if (!(driver->data_ready[i] & type)) {
+					if (!(driver->data_ready[j] & type)) {
 						driver->data_ready[j] |= type;
 						atomic_inc(
 						&driver->data_ready_notif[j]);
@@ -992,14 +992,14 @@ int diag_process_apps_pkt(unsigned char *buf, int len, int pid)
 		mutex_lock(&driver->md_session_lock);
 		info = diag_md_session_get_pid(pid);
 		if (info) {
-		p_mask = info->peripheral_mask;
+			p_mask = info->peripheral_mask;
 			mutex_unlock(&driver->md_session_lock);
-			if (MD_PERIPHERAL_MASK(reg_item->proc) & p_mask){
+			if (MD_PERIPHERAL_MASK(reg_item->proc) & p_mask) {
 				write_len = diag_send_data(reg_item, buf, len);
                             if(ntype != 0){
                                 pr_err("diag: In %s, received FTM debug cmd %s info\n", __func__, (ntype == 1) ? " wireless " : " wifi ");
                             }
-			    }else{
+			    } else {
                             if(ntype != 0){
                                 pr_err("diag: In %s, received FTM debug cmd %s info ignore\n", __func__, (ntype == 1) ? " wireless " : " wifi ");
                             }
@@ -1007,20 +1007,17 @@ int diag_process_apps_pkt(unsigned char *buf, int len, int pid)
 		} else {
 			mutex_unlock(&driver->md_session_lock);
 			if (MD_PERIPHERAL_MASK(reg_item->proc) &
-				driver->logging_mask){
-				mutex_unlock(&driver->cmd_reg_mutex);
+				driver->logging_mask) {
 				diag_send_error_rsp(buf, len, pid);
                             if(ntype != 0){
                                 pr_err("diag: In %s, received FTM debug cmd %s no info error reg_item->proc %d driver->logging_mask %d\n", __func__, (ntype == 1) ? " wireless " : " wifi ", reg_item->proc, driver->logging_mask);
                             }
-        return write_len;
-			    }
-			else{
+			} else {
 				write_len = diag_send_data(reg_item, buf, len);
                             if(ntype != 0){
                                 pr_err("diag: In %s, received FTM debug cmd %s no info success reg_item->proc %d driver->logging_mask %d\n", __func__, (ntype == 1) ? " wireless " : " wifi ", reg_item->proc, driver->logging_mask);
                             }
-			    }
+			}
 		}
 		mutex_unlock(&driver->cmd_reg_mutex);
 		return write_len;

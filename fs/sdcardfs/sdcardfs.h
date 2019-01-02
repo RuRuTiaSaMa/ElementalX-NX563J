@@ -87,6 +87,7 @@
 		(x)->i_gid = make_kgid(&init_user_ns, AID_SDCARD_RW);	\
 		(x)->i_mode = ((x)->i_mode & S_IFMT) | 0775;\
 	} while (0)
+
 /* OVERRIDE_CRED() and REVERT_CRED()
  *	OVERRIDE_CRED()
  *		backup original task->cred
@@ -120,7 +121,6 @@ struct sdcardfs_file_creator {
 };
 #endif
 //Nubia FileObserver End
-
 /* Android 5.0 support */
 
 /* Permission mode for a specific node. Controls how file permissions

@@ -67,10 +67,8 @@ enum print_reason {
 #define USBIN_I_VOTER			"USBIN_I_VOTER"
 #if !defined(CONFIG_NUBIA_CHARGE_FEATURE) || defined(CONFIG_ZTE_NX563J)
 #define WEAK_CHARGER_VOTER		"WEAK_CHARGER_VOTER"
-#define OV_VOTER			"OV_VOTER"
 #endif
-#define DC_USBIN_VOTER			"DC_USBIN_VOTER"
-
+#define OV_VOTER			"OV_VOTER"
 
 #define VCONN_MAX_ATTEMPTS	3
 #define OTG_MAX_ATTEMPTS	3

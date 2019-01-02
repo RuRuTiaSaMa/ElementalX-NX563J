@@ -196,6 +196,14 @@ static ssize_t synaptics_rmi4_0dbutton_show(struct device *dev,
 static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count);
 
+#ifdef CONFIG_TOUCHSCREEN_NUBIA_SYNAPTICS_DSX_REVERSED_KEYS_FORCE
+static ssize_t synaptics_rmi4_reversed_keys_show(struct device *dev,
+		struct device_attribute *attr, char *buf);
+
+static ssize_t synaptics_rmi4_reversed_keys_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count);
+#endif
+
 #ifdef NUBIA_TOUCH_SYNAPTICS
 static ssize_t synaptics_rmi4_home_show(struct device *dev,
 		struct device_attribute *attr, char *buf);
@@ -682,6 +690,11 @@ static struct device_attribute attrs[] = {
 	__ATTR(0dbutton, (S_IRUGO | S_IWUSR),
 			synaptics_rmi4_0dbutton_show,
 			synaptics_rmi4_0dbutton_store),
+#ifdef CONFIG_TOUCHSCREEN_NUBIA_SYNAPTICS_DSX_REVERSED_KEYS_FORCE
+	__ATTR(reversed_keys, (S_IRUGO | S_IWUSR),
+			synaptics_rmi4_reversed_keys_show,
+			synaptics_rmi4_reversed_keys_store),
+#endif
 	__ATTR(suspend, S_IWUSR,
 			synaptics_rmi4_show_error,
 			synaptics_rmi4_suspend_store),
@@ -980,7 +993,7 @@ static ssize_t synaptics_rmi4_back_store(struct device *dev,
 }
 #endif
 
-unsigned int nubia_button_0d_enabled = 0;
+unsigned int nubia_button_0d_enabled = 1;
 static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -1035,6 +1048,29 @@ static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
 
 	return count;
 }
+
+#ifdef CONFIG_TOUCHSCREEN_NUBIA_SYNAPTICS_DSX_REVERSED_KEYS_FORCE
+static ssize_t synaptics_rmi4_reversed_keys_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+	return snprintf(buf, PAGE_SIZE, "%u\n",
+			rmi4_data->enable_reversed_keys);
+}
+static ssize_t synaptics_rmi4_reversed_keys_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int input;
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+	if (sscanf(buf, "%u", &input) != 1)
+		return -EINVAL;
+	input = input > 0 ? 1 : 0;
+	if (rmi4_data->enable_reversed_keys == input)
+		return count;
+	rmi4_data->enable_reversed_keys = input;
+	return count;
+}
+#endif
 
 static ssize_t synaptics_rmi4_suspend_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
@@ -1295,9 +1331,9 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 
 		if (detected_gestures) {
 			//nubia, use F10 as double click wakeup flag
-			input_report_key(rmi4_data->input_dev, KEY_F10, 1);
+			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 1);
 			input_sync(rmi4_data->input_dev);
-			input_report_key(rmi4_data->input_dev, KEY_F10, 0);
+			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 0);
 			input_sync(rmi4_data->input_dev);
 			rmi4_data->suspend = false;
 		}
@@ -1506,9 +1542,9 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 
 		if (gesture_type && gesture_type != F12_UDG_DETECT) {
 			//nubia, use F10 as wakeup gesture event flag
-			input_report_key(rmi4_data->input_dev, KEY_F10, 1);
+			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 1);
 			input_sync(rmi4_data->input_dev);
-			input_report_key(rmi4_data->input_dev, KEY_F10, 0);
+			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 0);
 			input_sync(rmi4_data->input_dev);
 			//rmi4_data->suspend = false;
 			pr_err("[TP]synaptics wakeup gesture detected !\n");
@@ -1795,6 +1831,21 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	return touch_count;
 }
 
+static void synaptics_rmi4_report_key(struct synaptics_rmi4_data *rmi4_data,
+		int key, int status)
+{
+#ifdef CONFIG_TOUCHSCREEN_NUBIA_SYNAPTICS_DSX_REVERSED_KEYS_FORCE
+	if (key == KEY_MENU)
+		input_report_key(rmi4_data->input_dev,
+				rmi4_data->enable_reversed_keys ? KEY_BACK : KEY_MENU, status);
+	else if (key == KEY_BACK)
+		input_report_key(rmi4_data->input_dev,
+				rmi4_data->enable_reversed_keys ? KEY_MENU : KEY_BACK, status);
+	else
+#endif
+		input_report_key(rmi4_data->input_dev, key, status);
+}
+
 static void synaptics_rmi4_f1a_report(struct synaptics_rmi4_data *rmi4_data,
 		struct synaptics_rmi4_fn *fhandler)
 {
@@ -1876,16 +1927,12 @@ static void synaptics_rmi4_f1a_report(struct synaptics_rmi4_data *rmi4_data,
 				}
 			}
 			touch_count++;
-			input_report_key(rmi4_data->input_dev,
-					f1a->button_map[button],
-					status);
+			synaptics_rmi4_report_key(rmi4_data, f1a->button_map[button], status);
 		} else {
 			if (before_2d_status[button] == 1) {
 				before_2d_status[button] = 0;
 				touch_count++;
-				input_report_key(rmi4_data->input_dev,
-						f1a->button_map[button],
-						status);
+				synaptics_rmi4_report_key(rmi4_data, f1a->button_map[button], status);
 			} else {
 				if (status == 1)
 					while_2d_status[button] = 1;
@@ -1895,9 +1942,7 @@ static void synaptics_rmi4_f1a_report(struct synaptics_rmi4_data *rmi4_data,
 		}
 #else
 		touch_count++;
-		input_report_key(rmi4_data->input_dev,
-				f1a->button_map[button],
-				status);
+		synaptics_rmi4_report_key(rmi4_data, f1a->button_map[button], status);
 #endif
 	}
 
@@ -3590,8 +3635,8 @@ static void synaptics_rmi4_set_params(struct synaptics_rmi4_data *rmi4_data)
 
 	if (rmi4_data->f11_wakeup_gesture || rmi4_data->f12_wakeup_gesture) {
 		//nubia, use F10 as wakeup gesture event flag
-		set_bit(KEY_F10, rmi4_data->input_dev->keybit);
-		input_set_capability(rmi4_data->input_dev, EV_KEY, KEY_F10);
+		set_bit(KEY_WAKEUP, rmi4_data->input_dev->keybit);
+		input_set_capability(rmi4_data->input_dev, EV_KEY, KEY_WAKEUP);
 	}
 
 	return;
